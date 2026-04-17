@@ -1,0 +1,44 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg-dark: #050505;
+  --color-surface: #121212;
+  --color-accent: #CCFF00;
+  --color-text-muted: #A0A0A0;
+  --color-border: rgba(255, 255, 255, 0.1);
+  --color-glass: rgba(255, 255, 255, 0.05);
+  
+  --font-sans: "Helvetica Neue", Arial, sans-serif;
+  --font-display: "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+}
+
+@layer base {
+  body {
+    @apply bg-bg-dark text-white antialiased;
+    font-family: var(--font-sans);
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+    @apply font-black tracking-tighter uppercase;
+  }
+}
+
+.glass-card {
+  @apply bg-glass backdrop-blur-md border border-border rounded-[20px];
+}
+
+.atmosphere-top {
+  background: radial-gradient(circle, rgba(204, 255, 0, 0.08) 0%, transparent 70%);
+}
+
+.atmosphere-bottom {
+  background: radial-gradient(circle, rgba(204, 255, 0, 0.05) 0%, transparent 70%);
+}
+
+.card-title {
+  @apply text-[11px] uppercase tracking-[1px] text-text-muted font-bold flex justify-between items-center;
+}
+
+

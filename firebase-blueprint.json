@@ -1,0 +1,68 @@
+/**
+ * Defines the structure of the Street2Stadium data models.
+ */
+{
+  "entities": {
+    "PlayerProfile": {
+      "title": "Player Profile",
+      "description": "Information about an individual football player",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "name": { "type": "string" },
+        "position": { "type": "string", "enum": ["GK", "LB", "CB", "RB", "CDM", "CM", "CAM", "LW", "RW", "ST"] },
+        "age": { "type": "number" },
+        "club": { "type": "string" },
+        "location": { "type": "string" },
+        "stats": { 
+          "type": "object",
+          "properties": {
+            "goals": { "type": "number" },
+            "assists": { "type": "number" },
+            "matches": { "type": "number" }
+          }
+        }
+      },
+      "required": ["userId", "name", "position"]
+    },
+    "Team": {
+      "title": "Team",
+      "description": "Football team or academy details",
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string" },
+        "name": { "type": "string" },
+        "location": { "type": "string" },
+        "members": { "type": "array", "items": { "type": "string" } },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["ownerId", "name"]
+    },
+    "TrainingSession": {
+      "title": "Training Session",
+      "description": "Prescribed AI training plan",
+      "type": "object",
+      "properties": {
+        "playerId": { "type": "string" },
+        "title": { "type": "string" },
+        "drills": { "type": "array" },
+        "isCompleted": { "type": "boolean" },
+        "date": { "type": "string", "format": "date" }
+      }
+    }
+  },
+  "firestore": {
+    "/profiles/{userId}": {
+      "schema": "PlayerProfile",
+      "description": "Stores user profiles"
+    },
+    "/teams/{teamId}": {
+      "schema": "Team",
+      "description": "Stores team information"
+    },
+    "/training/{sessionId}": {
+      "schema": "TrainingSession",
+      "description": "Stores player training sessions"
+    }
+  }
+}

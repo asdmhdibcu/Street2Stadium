@@ -1,0 +1,14 @@
+{
+  "name": "Street2Stadium",
+  "description": "AI-powered football platform empowering underprivileged players and teams with professional-grade coaching, analytics, and management tools.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ],
+  "majorCapabilities": [
+    "AI Coaching",
+    "Team Management",
+    "Training Plans",
+    "Performance Analytics"
+  ]
+}
