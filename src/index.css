@@ -1,11 +1,13 @@
 @import "tailwindcss";
 
 @theme {
-  --color-bg-dark: #050505;
-  --color-surface: #121212;
-  --color-accent: #CCFF00;
-  --color-text-muted: #A0A0A0;
-  --color-border: rgba(255, 255, 255, 0.1);
+  --color-bg-dark: #111827;
+  --color-surface: #1F2937;
+  --color-accent: #16A34A;
+  --color-stadium-gold: #F59E0B;
+  --color-text-light: #F9FAFB;
+  --color-text-muted: #9CA3AF;
+  --color-border: rgba(249, 250, 251, 0.1);
   --color-glass: rgba(255, 255, 255, 0.05);
   
   --font-sans: "Helvetica Neue", Arial, sans-serif;
@@ -15,8 +17,10 @@
 
 @layer base {
   body {
-    @apply bg-bg-dark text-white antialiased;
+    @apply bg-bg-dark text-text-light antialiased;
     font-family: var(--font-sans);
+    margin: 0;
+    padding: 0;
   }
   
   h1, h2, h3, h4, h5, h6 {
@@ -26,19 +30,21 @@
 }
 
 .glass-card {
-  @apply bg-glass backdrop-blur-md border border-border rounded-[20px];
+  @apply bg-surface border border-border shadow-md rounded-2xl;
 }
 
-.atmosphere-top {
-  background: radial-gradient(circle, rgba(204, 255, 0, 0.08) 0%, transparent 70%);
+/* Mobile App Constraint Container */
+.mobile-container {
+  @apply w-full max-w-[480px] mx-auto h-[100dvh] bg-bg-dark relative overflow-hidden flex flex-col shadow-2xl;
 }
 
-.atmosphere-bottom {
-  background: radial-gradient(circle, rgba(204, 255, 0, 0.05) 0%, transparent 70%);
+/* Hide scrollbar for clean UI */
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
 }
-
-.card-title {
-  @apply text-[11px] uppercase tracking-[1px] text-text-muted font-bold flex justify-between items-center;
+.scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
 }
 
 

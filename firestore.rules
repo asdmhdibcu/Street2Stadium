@@ -1,0 +1,259 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: profiles
+    // Document ID: {userId}
+    // Fields:
+    //   - userId: string (required) - uid of player
+    //   - name: string (required) - name
+    //   - position: string (required) - GK, LB, CB, RB, CDM, CM, CAM, LW, RW, ST
+    //   - age: number (optional) - age
+    //   - club: string (optional) - club name
+    //   - location: string (optional) - location string
+    //   - stats: map (optional) - { goals: number, assists: number, matches: number }
+    //
+    // Collection: teams
+    // Document ID: {teamId}
+    // Fields:
+    //   - ownerId: string (required)
+    //   - name: string (required)
+    //   - location: string (optional)
+    //   - members: list (optional)
+    //   - createdAt: string (optional, date-time format)
+    //
+    // Collection: training
+    // Document ID: {sessionId}
+    // Fields:
+    //   - playerId: string (required)
+    //   - title: string (optional)
+    //   - drills: list (optional)
+    //   - isCompleted: boolean (optional)
+    //   - date: string (optional, date format)
+    //
+    //
+    // Collection: events
+    // Document ID: {eventId}
+    // Fields:
+    //   - teamId: string (required)
+    //   - title: string (required)
+    //   - date: string (required)
+    //   - time: string (required)
+    //   - location: string (optional)
+    //   - notes: string (optional)
+    //   - type: string (required) - 'Training', 'Match'
+    //   - createdAt: string (optional)
+    //
+    // Collection: attendance
+    // Document ID: {eventId}_{userId}
+    // Fields:
+    //   - eventId: string (required)
+    //   - userId: string (required)
+    //   - teamId: string (required)
+    //   - status: string (required) - 'Going', 'Not Going'
+    //   - timestamp: string (optional)
+    //
+    // Collection: announcements
+    // Document ID: {announcementId}
+    // Fields:
+    //   - teamId: string (required)
+    //   - authorId: string (required)
+    //   - message: string (required)
+    //   - timestamp: string (optional)
+
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+
+    function isAuthenticated() {
+       return request.auth != null;
+    }
+
+    function isOwner(userId) {
+       return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function hasRequiredFields(fields) {
+       return request.resource.data.keys().hasAll(fields);
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    function validStringLength(field, minLen, maxLen) {
+       return request.resource.data[field] is string &&
+         request.resource.data[field].size() >= minLen &&
+         request.resource.data[field].size() <= maxLen;
+    }
+
+    function isValidOptionalString(field, minLen, maxLen) {
+      return !(field in request.resource.data) ||
+             (request.resource.data[field] is string &&
+              request.resource.data[field].size() >= minLen &&
+              request.resource.data[field].size() <= maxLen);
+    }
+    
+    function isValidOptionalNumber(field, min, max) {
+      return !(field in request.resource.data) ||
+             (request.resource.data[field] is number &&
+              request.resource.data[field] >= min &&
+              request.resource.data[field] <= max);
+    }
+    
+    function isValidOptionalBool(field) {
+      return !(field in request.resource.data) || (request.resource.data[field] is bool);
+    }
+    
+    function isValidOptionalList(field, maxSize) {
+      return !(field in request.resource.data) || (request.resource.data[field] is list && request.resource.data[field].size() <= maxSize);
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+
+    function isValidPlayerProfile() {
+      let allowedFields = ['userId', 'name', 'position', 'age', 'club', 'location', 'stats', 'role'];
+      let validPositions = ['GK', 'LB', 'CB', 'RB', 'CDM', 'CM', 'CAM', 'LW', 'RW', 'ST', 'Coach', 'Manager'];
+      let validRoles = ['Player', 'Coach', 'Manager'];
+      
+      return hasRequiredFields(['userId', 'name', 'position']) &&
+             hasOnlyAllowedFields(allowedFields) &&
+             request.resource.data.userId == request.auth.uid &&
+             validStringLength('userId', 1, 100) &&
+             validStringLength('name', 2, 50) &&
+             request.resource.data.position in validPositions &&
+             (!( 'role' in request.resource.data ) || request.resource.data.role in validRoles) &&
+             isValidOptionalNumber('age', 10, 100) &&
+             isValidOptionalString('club', 2, 100) &&
+             isValidOptionalString('location', 2, 100) &&
+             (!( 'stats' in request.resource.data ) || 
+               (request.resource.data.stats is map && 
+                request.resource.data.stats.keys().hasOnly(['goals', 'assists', 'matches', 'stamina', 'tactical', 'discipline']) &&
+                (!( 'goals' in request.resource.data.stats ) || request.resource.data.stats.goals is number) &&
+                (!( 'assists' in request.resource.data.stats ) || request.resource.data.stats.assists is number) &&
+                (!( 'matches' in request.resource.data.stats ) || request.resource.data.stats.matches is number) &&
+                (!( 'stamina' in request.resource.data.stats ) || request.resource.data.stats.stamina is number) &&
+                (!( 'tactical' in request.resource.data.stats ) || request.resource.data.stats.tactical is number) &&
+                (!( 'discipline' in request.resource.data.stats ) || request.resource.data.stats.discipline is number)
+               )
+             );
+    }
+
+    function isValidTeam() {
+      let allowedFields = ['ownerId', 'name', 'location', 'members', 'createdAt'];
+      
+      return hasRequiredFields(['ownerId', 'name']) &&
+             hasOnlyAllowedFields(allowedFields) &&
+             request.resource.data.ownerId == request.auth.uid &&
+             validStringLength('ownerId', 1, 100) &&
+             validStringLength('name', 2, 100) &&
+             isValidOptionalString('location', 2, 100) &&
+             isValidOptionalList('members', 50) &&
+             isValidOptionalString('createdAt', 5, 50);
+    }
+
+    function isValidTrainingSession() {
+      let allowedFields = ['playerId', 'title', 'drills', 'isCompleted', 'date'];
+      
+      return hasRequiredFields(['playerId']) &&
+             hasOnlyAllowedFields(allowedFields) &&
+             request.resource.data.playerId == request.auth.uid &&
+             validStringLength('playerId', 1, 100) &&
+             isValidOptionalString('title', 2, 100) &&
+             isValidOptionalList('drills', 50) &&
+             isValidOptionalBool('isCompleted') &&
+             isValidOptionalString('date', 5, 25);
+    }
+
+    function isValidEvent() {
+      let allowedFields = ['teamId', 'title', 'date', 'time', 'location', 'notes', 'type', 'createdAt'];
+      
+      return hasRequiredFields(['teamId', 'title', 'date', 'time', 'type']) &&
+             hasOnlyAllowedFields(allowedFields) &&
+             validStringLength('teamId', 1, 100) &&
+             validStringLength('title', 1, 100) &&
+             validStringLength('date', 1, 50) &&
+             validStringLength('time', 1, 50) &&
+             (request.resource.data.type in ['Training', 'Match']) &&
+             isValidOptionalString('location', 0, 100) &&
+             isValidOptionalString('notes', 0, 500) &&
+             isValidOptionalString('createdAt', 0, 50);
+    }
+
+    function isValidAttendance() {
+      let allowedFields = ['eventId', 'userId', 'teamId', 'status', 'timestamp'];
+      return hasRequiredFields(['eventId', 'userId', 'teamId', 'status']) &&
+             hasOnlyAllowedFields(allowedFields) &&
+             request.resource.data.userId == request.auth.uid && // User can only set their own attendance
+             (request.resource.data.status in ['Going', 'Not Going']) &&
+             isValidOptionalString('timestamp', 0, 50);
+    }
+
+    function isValidAnnouncement() {
+      let allowedFields = ['teamId', 'authorId', 'message', 'timestamp'];
+      return hasRequiredFields(['teamId', 'authorId', 'message']) &&
+             hasOnlyAllowedFields(allowedFields) &&
+             request.resource.data.authorId == request.auth.uid &&
+             validStringLength('message', 1, 1000) &&
+             isValidOptionalString('timestamp', 0, 50);
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /profiles/{userId} {
+      allow read: if isAuthenticated();
+      allow create: if isOwner(userId) && isValidPlayerProfile();
+      allow update: if isOwner(userId) && isValidPlayerProfile() && 
+                    request.resource.data.userId == resource.data.userId; // userId immutable
+      allow delete: if isOwner(userId);
+    }
+
+    match /teams/{teamId} {
+      allow read: if isAuthenticated(); // Allowed for squad selection & dashboard
+      allow create: if isAuthenticated() && isValidTeam();
+      allow update: if isAuthenticated() && resource.data.ownerId == request.auth.uid &&
+                    isValidTeam() && request.resource.data.ownerId == resource.data.ownerId;
+      allow delete: if isAuthenticated() && resource.data.ownerId == request.auth.uid;
+    }
+
+    match /training/{sessionId} {
+      allow read: if isAuthenticated() && resource.data.playerId == request.auth.uid;
+      allow create: if isAuthenticated() && isValidTrainingSession();
+      allow update: if isAuthenticated() && resource.data.playerId == request.auth.uid &&
+                    isValidTrainingSession() && request.resource.data.playerId == resource.data.playerId;
+      allow delete: if isAuthenticated() && resource.data.playerId == request.auth.uid;
+    }
+
+    match /events/{eventId} {
+      allow read: if isAuthenticated(); // any authenticated user can read events for now
+      allow create: if isAuthenticated() && isValidEvent(); // typically coach creates this
+      allow update: if isAuthenticated() && isValidEvent();
+      allow delete: if isAuthenticated();
+    }
+
+    match /attendance/{attendanceId} {
+      allow read: if isAuthenticated(); // read everyone's attendance
+      allow create: if isAuthenticated() && isValidAttendance();
+      allow update: if isAuthenticated() && isValidAttendance() && 
+                    request.resource.data.userId == resource.data.userId;
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
+    match /announcements/{announcementId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidAnnouncement();
+      allow update: if isAuthenticated() && isValidAnnouncement();
+      allow delete: if isAuthenticated() && resource.data.authorId == request.auth.uid;
+    }
+  }
+}

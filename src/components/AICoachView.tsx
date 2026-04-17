@@ -108,7 +108,11 @@ export default function AICoachView() {
         </div>
         <div className="flex gap-2">
            {['Tactics', 'Mentality', 'Drills'].map(tag => (
-             <button key={tag} className="px-3 py-1 rounded-full border border-border text-[9px] uppercase font-black text-text-muted hover:border-accent hover:text-accent transition-colors">
+             <button 
+               key={tag} 
+               onClick={() => setInput(`Can you give me a 5-minute advice on ${tag}?`)}
+               className="px-3 py-1 rounded-full border border-border text-[9px] uppercase font-black text-text-muted hover:border-accent hover:text-accent transition-colors"
+             >
                {tag}
              </button>
            ))}
